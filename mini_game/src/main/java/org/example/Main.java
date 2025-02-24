@@ -3,84 +3,121 @@ package org.example;
 import java.util.Random;
 import java.util.Scanner;
 
-
 public class Main {
+
+    private static final int MIN_ENEMIES = 3;
+    private static final int MAX_ENEMIES = 13;
+    private static final int MIN_HEALTH = 10;
+    private static final int MAX_HEALTH = 100;
+    private static final int MIN_STRENGTH = 25;
+    private static final int MAX_STRENGTH = 75;
+    private static final int MIN_SPEED = 3;
+    private static final int MAX_SPEED = 10;
+    private static final int MIN_WINRATE = 10;
+    private static final int MAX_WINRATE = 90;
+    private static final Random RANDOM = new Random();
+
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        Random rand = new Random();
-        int enemies =rand.nextInt(11) + 3;
-        System.out.println("You will have " + enemies + " fighters");
-        System.out.println("You are meeting enemies with following stats:");
-        int enemyHealth = rand.nextInt(91) + 10;
-        int enemyStrength = rand.nextInt(51) + 25;
-        int enemySpeed = rand.nextInt(8) + 3;
-        Character enemy = new Character("Enemy", enemyHealth, enemyStrength, enemySpeed);
+
+        // Generiere Gegner Anzahl
+        int numberOfEnemies = getRandomValue(MIN_ENEMIES, MAX_ENEMIES);
+        System.out.println("You will face " + numberOfEnemies + " enemies!");
+
+        // Generiere Gegner Stats
+        Character enemy = createRandomCharacter();
+        System.out.println("Enemy stats:");
         enemy.printStatus();
-        int winRate = rand.nextInt(91) + 10;
-        System.out.println("Try to have a winrate of "+ winRate +"%");
 
-        System.out.println("What is your strength?");
-        int playerStrength = Integer.parseInt(scanner.nextLine());
+        // Ziel-Winrate
+        int targetWinRate = getRandomValue(MIN_WINRATE, MAX_WINRATE);
+        System.out.println("Try to achieve a winrate of " + targetWinRate + "%");
 
-        System.out.println("What is your health?");
-        int playerHealth = Integer.parseInt(scanner.nextLine());
+        // Spieler-Eingabe
+        Character player = createPlayerCharacter();
 
-        System.out.println("What is your speed?");
-        int playerSpeed = Integer.parseInt(scanner.nextLine());
+        // Kampf-Logik
+        int wins = simulateFights(player, enemy, numberOfEnemies);
 
-        int winns = 0;
-        Character player = new Character("Player", playerStrength, playerHealth, playerSpeed);
-        int leftFights= enemies;
-
-        System.out.println("Battles Start!");
-        // Kampf beginnt
-        player.printStatus();
-        enemy.printStatus();
-        while(leftFights != 0) {
-            // Kampf-Logik  
-            while (enemy.isAlive() && player.isAlive()) {
-                if (player.speed >= enemy.speed) {
-                    takeTurn(player, enemy);
-                    if(enemy.isAlive()){
-                        takeTurn(enemy, player);
-                    }
-                }
-                else {
-                    takeTurn(enemy, player);
-                    if (player.isAlive()){
-                        takeTurn(player, enemy);
-                    }
-                }
-            }
-            // Ergebnis eines Kampfes
-            if (player.isAlive()) {
-                System.out.println("\n -------------" + player.name + " wins the battle!");
-                winns = winns + 1;
-                leftFights = leftFights - 1;
-                enemy.setHealth(enemyHealth);
-                player.setHealth(playerHealth);
-
-            } else {
-                System.out.println("\n -------------" + enemy.name + " wins the battle!");
-                leftFights = leftFights - 1;
-                enemy.setHealth(enemyHealth);
-                player.setHealth(playerHealth);
-            }
-
-        }
-        System.out.println("Your won " + winns + " fighters against " + enemies + " enemies");
-        double winrate = ((double) winns / enemies) * 100; // Gleitkommadivision
-        int roundedWinrate = (int) Math.round(winrate);
-        System.out.println("Your winrate is: " + roundedWinrate + " %");
-        System.out.println("The difference is: " + (roundedWinrate - winRate) + " %");
+        // Ergebnisse anzeigen
+        displayResults(wins, numberOfEnemies, targetWinRate);
     }
 
-    // Eine Angriff
-    public static void takeTurn(Character attacker, Character defender) {
-        System.out.println(attacker.name + " attacks " + defender.name + "!");
-        int damage = attacker.attack();
+    public static Character createRandomCharacter() {
+        int health = getRandomValue(MIN_HEALTH, MAX_HEALTH);
+        int strength = getRandomValue(MIN_STRENGTH, MAX_STRENGTH);
+        int speed = getRandomValue(MIN_SPEED, MAX_SPEED);
+        return new Character("Enemy", health, strength, speed);
+    }
+
+    public static Character createPlayerCharacter() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter your stats:");
+        System.out.print("Health: ");
+        int health = Integer.parseInt(scanner.nextLine());
+        System.out.print("Strength: ");
+        int strength = Integer.parseInt(scanner.nextLine());
+        System.out.print("Speed: ");
+            int speed = Integer.parseInt(scanner.nextLine());
+        return new Character("Player", health, strength, speed);
+    }
+
+    public static int simulateFights(Character player, Character enemy, int totalEnemies) {
+        int wins = 0;
+
+        System.out.println("Battles start!");
+        for (int i = 0; i < totalEnemies; i++) {
+            System.out.println("\n--- Battle " + (i + 1) + " ---");
+            boolean playerWon = conductBattle(player, enemy);
+            if (playerWon) {
+                wins++;
+            }
+            // Lebenspunkte zurücksetzen
+            player.resetHealth();
+            enemy.resetHealth();
+        }
+
+        return wins;
+    }
+
+    public static boolean conductBattle(Character player, Character enemy) {
+
+        while (player.isAlive() && enemy.isAlive()) {
+            if (player.getSpeed() >= enemy.getSpeed()) {
+                performAttack(player, enemy);
+                if (enemy.isAlive()) {
+                    performAttack(enemy, player);
+                }
+            } else {
+                performAttack(enemy, player);
+                if (player.isAlive()) {
+                    performAttack(player, enemy);
+                }
+            }
+        }
+
+        boolean playerWon = player.isAlive();
+        System.out.println(playerWon ? "Player wins!" : "Enemy wins!");
+
+        return playerWon;
+    }
+
+    public static void performAttack(Character attacker, Character defender) {
+        System.out.println(attacker.getName() + " attacks " + defender.getName() + "!");
+        int damage = attacker.calculateAttackDamage();
         defender.takeDamage(damage);
-        System.out.println(defender.name + " takes " + damage + " damage. Remaining health: " + defender.health);
-        System.out.println();
+        System.out.println(defender.getName() + " takes " + damage + " damage. Remaining health: " + defender.getHealth());
+    }
+
+    public static void displayResults(int wins, int totalBattles, int targetWinRate) {
+        System.out.println("\n------ Results ------");
+        System.out.println("You won " + wins + " out of " + totalBattles + " battles.");
+        double actualWinRate = ((double) wins / totalBattles) * 100;
+        int roundedWinRate = (int) Math.round(actualWinRate);
+        System.out.println("Your winrate is: " + roundedWinRate + "%");
+        System.out.println("The difference from the target winrate (" + targetWinRate + "%) is: " + (roundedWinRate - targetWinRate) + "%");
+    }
+
+    public static int getRandomValue(int min, int max) {
+        return RANDOM.nextInt(max - min + 1) + min;
     }
 }
