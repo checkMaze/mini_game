@@ -37,7 +37,7 @@ public class Main {
         player.printStatus();
         enemy.printStatus();
         while(leftFights != 0) {
-            // Kampf-Logik
+            // Kampf-Logik  
             while (enemy.isAlive() && player.isAlive()) {
                 if (player.speed >= enemy.speed) {
                     takeTurn(player, enemy);
